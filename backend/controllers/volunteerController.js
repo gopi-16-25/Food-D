@@ -15,7 +15,7 @@ exports.getDashboardData = async (req, res) => {
             status: { $in: ['assigned', 'picked'] }
         }).populate('donor', 'name phone location')
             .populate('recipient', 'name phone recipientLocation')
-            .sort({ 'volunteerCommitment.deliveryDeadline': 1 }); // Urgent first
+            .sort({ updatedAt: -1 });
 
         // Completed: assigned to me, completed/delivered
         const completedDeliveries = await Donation.find({
@@ -30,7 +30,7 @@ exports.getDashboardData = async (req, res) => {
             expiryDate: { $gt: new Date() }
         }).populate('donor', 'name location')
             .populate('recipient', 'name recipientLocation')
-            .sort({ createdAt: -1 });
+            .sort({ updatedAt: -1 });
 
         // 2. ANALYTICS & SCORING
         // Impact Score: Simple count of completed deliveries

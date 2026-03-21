@@ -11,7 +11,7 @@ exports.getDashboardData = async (req, res) => {
         const donations = await Donation.find({ recipient: recipientId })
             .populate("donor", "name email phone avatar")
             .populate("volunteer", "name email phone avatar")
-            .sort({ createdAt: -1 });
+            .sort({ updatedAt: -1 });
 
         // OVERVIEW METRICS
         const totalRequests = donations.length;

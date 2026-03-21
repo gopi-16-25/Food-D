@@ -1,5 +1,5 @@
 import { useState, useEffect, Fragment } from 'react';
-import { getRecipientDashboard, completeDonation } from '../../services/api';
+import { getRecipientDashboard, completeDonation, clearInactiveDonations } from '../../services/api';
 import { socket } from '../../services/socket';
 import { FaCheck, FaTruck, FaBox, FaUserClock, FaMapMarkerAlt, FaChevronDown, FaChevronUp, FaClipboardList, FaUser, FaCheckCircle, FaClock, FaBoxOpen } from 'react-icons/fa';
 import toast from 'react-hot-toast';
@@ -10,6 +10,7 @@ const RecipientRequests = () => {
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
+    const [clearing, setClearing] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -47,6 +48,20 @@ const RecipientRequests = () => {
             toast.error("Failed to confirm delivery.");
         } finally {
             setConfirmModal({ isOpen: false, id: null });
+        }
+    };
+
+    const handleClearInactive = async () => {
+        if (!window.confirm("Are you sure you want to completely remove all completed and expired records from your view?")) return;
+        setClearing(true);
+        try {
+            const res = await clearInactiveDonations();
+            toast.success(res.data?.message || "Cleared inactive records!");
+            fetchData();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to clear records");
+        } finally {
+            setClearing(false);
         }
     };
 
@@ -125,8 +140,19 @@ const RecipientRequests = () => {
                 </div>
             )}
 
+            {/* ACTIONS */}
+            <div className="flex justify-end px-2">
+                <button
+                    onClick={handleClearInactive}
+                    disabled={clearing}
+                    className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-white text-red-600 hover:bg-red-50 transition-all border border-red-100 disabled:opacity-50 flex items-center shadow-sm hover:shadow-md"
+                >
+                    {clearing ? 'Clearing...' : 'Clear Inactive'}
+                </button>
+            </div>
+
             {/* DENSE HISTORY TABLE (RESTORED DETAILING) */}
-            <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/40 border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/40 border border-gray-100 overflow-hidden mt-4">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left min-w-[1000px] border-collapse">
                         <thead>

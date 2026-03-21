@@ -141,7 +141,7 @@ exports.getPerformance = async (req, res) => {
 // @access  Private (Admin)
 exports.getUsers = async (req, res) => {
     try {
-        const users = await User.find({ role: { $ne: 'admin' } }).select('-otp -otpExpires').sort({ createdAt: -1 });
+        const users = await User.find({ role: { $ne: 'admin' } }).select('-otp -otpExpires').sort({ updatedAt: -1 });
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -157,7 +157,7 @@ exports.getDonations = async (req, res) => {
             .populate('donor', 'name email')
             .populate('volunteer', 'name email')
             .populate('recipient', 'name email')
-            .sort({ createdAt: -1 });
+            .sort({ updatedAt: -1 });
         res.json(donations);
     } catch (error) {
         res.status(500).json({ message: error.message });

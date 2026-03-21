@@ -1,5 +1,6 @@
 import { useState, useEffect, Fragment } from 'react';
-import { getAdminDonations } from '../../services/api';
+import { getAdminDonations, clearInactiveDonations } from '../../services/api';
+import { toast } from 'react-hot-toast';
 import { FaSearch, FaFilter, FaMapMarkerAlt, FaChevronDown, FaChevronUp, FaClipboardList, FaUser, FaTruck, FaCheckCircle, FaBoxOpen, FaClock, FaCircle } from 'react-icons/fa';
 
 const AdminOrders = () => {
@@ -10,6 +11,7 @@ const AdminOrders = () => {
     const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(15);
     const [expandedRow, setExpandedRow] = useState(null);
+    const [clearing, setClearing] = useState(false);
 
     useEffect(() => {
         fetchDonations();
@@ -47,6 +49,20 @@ const AdminOrders = () => {
 
     const toggleRow = (id) => {
         setExpandedRow(expandedRow === id ? null : id);
+    };
+
+    const handleClearInactive = async () => {
+        if (!window.confirm("Are you sure you want to completely remove all completed and expired records from the system?")) return;
+        setClearing(true);
+        try {
+            const res = await clearInactiveDonations();
+            toast.success(res.data?.message || "Cleared inactive records!");
+            fetchDonations();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to clear records");
+        } finally {
+            setClearing(false);
+        }
     };
 
     const StatusBadge = ({ status }) => {
@@ -98,6 +114,14 @@ const AdminOrders = () => {
                             {status}
                         </button>
                     ))}
+                    <div className="w-px h-6 bg-gray-200 mx-1 hidden lg:block"></div>
+                    <button
+                        onClick={handleClearInactive}
+                        disabled={clearing}
+                        className="px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100 transition-all border border-red-100 disabled:opacity-50 flex items-center"
+                    >
+                        {clearing ? 'Clearing...' : 'Clear Inactive'}
+                    </button>
                 </div>
             </div>
 

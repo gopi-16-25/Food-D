@@ -87,16 +87,18 @@ const Header = () => {
             // Perspective: Recipient
             if (user.role === 'recipient') {
                 if (data.type === 'request_approved') {
+                    // Handled specifically for the requesting recipient via targeted broadcast
                     msg = `Your request for ${data.foodType} was approved!`;
                     icon = '✅';
                 } else if (data.type === 'request_rejected') {
+                    // Handled specifically via targeted broadcast
                     msg = `Sorry, your request for ${data.foodType} was declined.`;
                     icon = '❌';
-                } else if (data.status === 'assigned') {
-                    msg = `A volunteer has been assigned to your gift!`;
+                } else if (data.status === 'assigned' && data.recipientId === user._id) {
+                    msg = `A volunteer has been assigned to deliver your food!`;
                     icon = '🚚';
-                } else if (data.status === 'picked') {
-                    msg = `Your gift is on the way!`;
+                } else if (data.status === 'picked' && data.recipientId === user._id) {
+                    msg = `Your requested food is on the way!`;
                     icon = '📦';
                 } else if (data.type === 'partial_reservation') {
                     msg = `Hurry! Someone else just requested ${data.foodType}.`;
@@ -105,13 +107,16 @@ const Header = () => {
             }
 
             // Perspective: Donor
-            if (user.role === 'donor') {
+            if (user.role === 'donor' && data.donorId === user._id) {
                 if (data.status === 'assigned') {
                     msg = `Volunteer assigned for your ${data.foodType}.`;
                     icon = '🤝';
                 } else if (data.status === 'completed') {
                     msg = `Mission Accomplished! Handed over to recipient.`;
                     icon = '💖';
+                } else if (data.status === 'picked') {
+                    msg = `Volunteer picked up your donation.`;
+                    icon = '📦';
                 }
             }
 

@@ -37,6 +37,7 @@ export const updateDonationStatus = (id, status, otp) => api.put(`/donations/${i
 export const requestDonation = (id, location, address, requestedQuantity) => api.put(`/donations/${id}/request`, { location, address, requestedQuantity });
 export const handleDonationRequestAction = (id, action) => api.put(`/donations/${id}/action`, { action });
 export const completeDonation = (id) => api.put(`/donations/${id}/complete`, {});
+export const clearInactiveDonations = () => api.delete('/donations/clear-inactive');
 
 // Recipient APIs
 export const getRecipientDashboard = () => api.get('/recipient/dashboard');

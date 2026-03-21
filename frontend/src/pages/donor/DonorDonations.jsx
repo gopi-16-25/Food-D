@@ -1,5 +1,5 @@
 import { useState, useEffect, Fragment } from 'react';
-import { getMyDonations, handleDonationRequestAction } from '../../services/api';
+import { getMyDonations, handleDonationRequestAction, clearInactiveDonations } from '../../services/api';
 import { socket } from '../../services/socket';
 import { FaSearch, FaChevronDown, FaChevronUp, FaMapMarkerAlt, FaPhone, FaKey, FaCheckCircle, FaClipboardList, FaUser, FaTruck, FaBoxOpen, FaClock, FaUsers, FaArrowRight, FaShieldAlt, FaExternalLinkAlt, FaUtensils, FaHourglassHalf } from 'react-icons/fa';
 import toast from 'react-hot-toast';
@@ -12,6 +12,7 @@ const DonorDonations = () => {
     const [loading, setLoading] = useState(true);
     const [expandedRow, setExpandedRow] = useState(null);
     const [visibleCount, setVisibleCount] = useState(15);
+    const [clearing, setClearing] = useState(false);
 
     useEffect(() => {
         fetchDonations();
@@ -75,10 +76,24 @@ const DonorDonations = () => {
         }
     };
 
+    const handleClearInactive = async () => {
+        if (!window.confirm("Are you sure you want to clear all completed and expired records?")) return;
+        setClearing(true);
+        try {
+            const res = await clearInactiveDonations();
+            toast.success(res.data?.message || "Cleared inactive records!");
+            fetchDonations();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to clear records");
+        } finally {
+            setClearing(false);
+        }
+    };
+
     const stats = {
         total: donations.length,
         completed: donations.filter(d => ['completed', 'delivered'].includes(d.status)).length,
-        active: donations.filter(d => ['posted', 'requested', 'assigned', 'picked'].includes(d.status)).length,
+        active: donations.filter(d => ['posted', 'requested', 'assigned', 'picked'].includes(d.status) && d.quantity > 0).length,
         peopleHelped: donations.filter(d => ['completed', 'delivered'].includes(d.status)).length
     };
 
@@ -108,12 +123,79 @@ const DonorDonations = () => {
         return `${hours}h left`;
     };
 
+    // Aggregate all sub-requests across all parent donations that are pending approval
+    const allPendingRequests = donations.reduce((acc, donation) => {
+        if (donation.subRequests) {
+            const pending = donation.subRequests
+                .filter(r => r.status === 'pending_approval')
+                .map(r => ({ ...r, parentFoodType: donation.foodType }));
+            return [...acc, ...pending];
+        }
+        return acc;
+    }, []);
+
     const latestOrder = filteredDonations[0];
 
     if (loading) return <div className="p-8 text-center text-gray-500">Loading donor dashboard...</div>;
 
     return (
         <div className="space-y-8 pb-20 max-w-7xl mx-auto animate-fade-in-up">
+
+            {/* NEW: AGGREGATED PENDING APPROVALS SECTION */}
+            {allPendingRequests.length > 0 && (
+                <div className="bg-gradient-to-br from-orange-50 to-white p-8 rounded-[2.5rem] shadow-sm border border-orange-100 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                        <FaUsers className="text-8xl text-orange-600" />
+                    </div>
+                    <div className="flex items-center space-x-3 mb-6">
+                        <div className="h-3 w-3 bg-orange-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(249,115,22,0.5)]"></div>
+                        <h2 className="text-xl font-black text-gray-800 uppercase tracking-wider">Requests Awaiting Your Approval</h2>
+                        <span className="bg-orange-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full">{allPendingRequests.length}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {allPendingRequests.map(req => (
+                            <div key={req._id} className="bg-white p-6 rounded-3xl border border-orange-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-orange-400"></div>
+                                <div className="flex flex-col h-full space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="h-10 w-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center text-lg font-black">{req.quantity}</div>
+                                            <div>
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{req.parentFoodType}</p>
+                                                <p className="font-black text-gray-800 text-sm truncate w-32">{req.recipient?.name}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[8px] font-black text-gray-400 uppercase">{new Date(req.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center text-[10px] text-gray-500 font-bold">
+                                        <FaMapMarkerAlt className="mr-1.5 text-orange-400 shrink-0" />
+                                        <span className="truncate">{req.recipientLocation?.address?.split(',')[0]}</span>
+                                    </div>
+
+                                    <div className="flex gap-2 pt-2">
+                                        <button 
+                                            onClick={() => handleAction(req._id, 'approve')}
+                                            className="flex-1 py-2.5 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-100 hover:scale-[1.02] active:scale-95 transition-all"
+                                        >
+                                            Approve
+                                        </button>
+                                        <button 
+                                            onClick={() => handleAction(req._id, 'reject')}
+                                            className="flex-1 py-2.5 bg-gray-50 text-gray-400 text-[9px] font-black uppercase tracking-widest rounded-xl border border-gray-100 hover:bg-red-50 hover:text-red-500 transition-all font-bold"
+                                        >
+                                            Reject
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* STATS CARDS - COMPACT & PREMIUM */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -195,7 +277,7 @@ const DonorDonations = () => {
                         className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-4 focus:ring-emerald-500/10 text-sm"
                     />
                 </div>
-                <div className="flex flex-wrap justify-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-center gap-1.5">
                     {['all', 'posted', 'pending_approval', 'requested', 'assigned', 'completed'].map(status => (
                         <button
                             key={status}
@@ -208,6 +290,14 @@ const DonorDonations = () => {
                             {status.replace('_', ' ')}
                         </button>
                     ))}
+                    <div className="w-px h-6 bg-gray-200 mx-2 hidden lg:block"></div>
+                    <button
+                        onClick={handleClearInactive}
+                        disabled={clearing}
+                        className="px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100 transition-all ml-auto border border-red-100 disabled:opacity-50 flex items-center"
+                    >
+                        {clearing ? 'Clearing...' : 'Clear Inactive'}
+                    </button>
                 </div>
             </div>
 

@@ -19,7 +19,7 @@ exports.getMyDonations = async (req, res) => {
         }
 
         let donations = await Donation.find(query)
-            .sort({ createdAt: -1 })
+            .sort({ updatedAt: -1 })
             .populate('volunteer', 'name phone')
             .populate('donor', 'name phone')
             .populate('recipient', 'name phone');
@@ -141,7 +141,7 @@ exports.getNearbyDonations = async (req, res) => {
             query.volunteer = null; // Fix: explicitly check for null as per schema default
         }
 
-        const donations = await Donation.find(query).populate('donor', 'name phone');
+        const donations = await Donation.find(query).populate('donor', 'name phone').sort({ updatedAt: -1 });
 
         // ENHANCE FOR RECIPIENT: Calculate total pending quantity and check own request status
         if (req.user.role === 'recipient') {
@@ -289,10 +289,13 @@ exports.handleRequestAction = async (req, res) => {
             }
 
             // Deduct quantity from parent
-            parent.quantity -= subDonation.quantity;
+            parent.quantity = Math.max(0, parent.quantity - subDonation.quantity);
 
-            // If parent quantity hits 0, expire it or just leave it at 0 (not visible in nearby anyway due to front-end filter if added)
-            // But better to keep it 'posted' as long as > 0.
+            // If parent quantity hits 0, mark as completed so it can be cleared but remains for tracking
+            if (parent.quantity <= 0) {
+                parent.status = 'completed';
+            }
+
             await parent.save();
 
             // Update sub-donation to 'requested' (now visible to volunteers)
@@ -300,7 +303,14 @@ exports.handleRequestAction = async (req, res) => {
             await subDonation.save();
 
             // Notify everyone about global changes
-            getIO().emit('donationUpdated', { donationId: subDonation._id, status: 'requested', type: 'approval' });
+            getIO().emit('donationUpdated', { 
+                donationId: subDonation._id, 
+                status: 'requested', 
+                type: 'approval',
+                parentId: parent._id,
+                parentQuantity: parent.quantity,
+                parentStatus: parent.status
+            });
             getIO().emit('donationUpdated', { donationId: parent._id, quantity: parent.quantity, type: 'parent_update' });
 
             // Targeted notification for Recipient
@@ -390,7 +400,10 @@ exports.assignDonation = async (req, res) => {
         getIO().emit('donationUpdated', {
             donationId: donation._id,
             status: 'assigned',
-            foodType: donation.foodType
+            foodType: donation.foodType,
+            donorId: donation.donor._id ? donation.donor._id.toString() : donation.donor.toString(),
+            recipientId: donation.recipient._id ? donation.recipient._id.toString() : donation.recipient.toString(),
+            volunteerId: req.user._id.toString()
         });
 
         res.json({
@@ -562,7 +575,10 @@ exports.updateStatus = async (req, res) => {
         getIO().emit('donationUpdated', {
             donationId: donation._id,
             status: donation.status,
-            foodType: donation.foodType
+            foodType: donation.foodType,
+            donorId: donation.donor._id ? donation.donor._id.toString() : donation.donor.toString(),
+            recipientId: donation.recipient._id ? donation.recipient._id.toString() : donation.recipient.toString(),
+            volunteerId: donation.volunteer._id ? donation.volunteer._id.toString() : donation.volunteer.toString()
         });
 
         // Also emit specific verified events if needed by frontend, but donationUpdated covers most state changes
@@ -598,7 +614,9 @@ exports.completeDonation = async (req, res) => {
         getIO().emit('donationUpdated', {
             donationId: donation._id,
             status: 'completed',
-            foodType: donation.foodType
+            foodType: donation.foodType,
+            donorId: donation.donor._id ? donation.donor._id.toString() : donation.donor.toString(),
+            recipientId: donation.recipient._id ? donation.recipient._id.toString() : donation.recipient.toString()
         });
         res.json({ message: 'Donation completed', donation });
     } catch (error) {
@@ -751,5 +769,33 @@ exports.searchGeocode = async (req, res) => {
     } catch (error) {
         console.error('Search Geocode Proxy Error:', error.message);
         res.status(502).json({ message: 'Geocoding service unavailable' });
+    }
+};
+
+// @desc    Clear inactive donations (completed, expired, rejected)
+// @route   DELETE /api/donations/clear-inactive
+// @access  Private
+exports.clearInactive = async (req, res) => {
+    try {
+        const statusesToClear = ['completed', 'expired', 'rejected'];
+        let query = { 
+            $or: [
+                { status: { $in: statusesToClear } },
+                { status: 'posted', quantity: 0 }
+            ]
+        };
+
+        if (req.user.role === 'donor') {
+            query.donor = req.user._id;
+        } else if (req.user.role === 'recipient') {
+            query.recipient = req.user._id;
+        } else if (req.user.role === 'volunteer') {
+            query.volunteer = req.user._id;
+        }
+
+        const result = await Donation.deleteMany(query);
+        res.json({ message: `Cleared ${result.deletedCount} inactive records.` });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };

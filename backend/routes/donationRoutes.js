@@ -11,13 +11,15 @@ const {
     requestDonation,
     completeDonation,
     getDonorAnalytics,
-    handleRequestAction
+    handleRequestAction,
+    clearInactive
 } = require('../controllers/donationController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.post('/', protect, createDonation);
 router.get('/my/analytics', protect, getDonorAnalytics);
 router.get('/my', protect, getMyDonations);
+router.delete('/clear-inactive', protect, clearInactive);
 router.get('/nearby', protect, getNearbyDonations);
 router.get('/reverse-geocode', protect, require('../controllers/donationController').reverseGeocode);
 router.get('/search-geocode', protect, require('../controllers/donationController').searchGeocode);

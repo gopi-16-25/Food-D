@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getDonorAnalytics } from '../../services/api';
-import { FaCheckCircle, FaHandHoldingHeart } from 'react-icons/fa';
+import { getDonorAnalytics, getMyDonations } from '../../services/api';
+import { FaCheckCircle, FaHandHoldingHeart, FaUsers, FaArrowRight } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 import Donate from '../Donate';
 
 const DonorOverview = () => {
@@ -13,6 +14,7 @@ const DonorOverview = () => {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [showThankYou, setShowThankYou] = useState(false);
+    const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
         fetchData();
@@ -20,16 +22,28 @@ const DonorOverview = () => {
 
     const fetchData = async () => {
         try {
-            const { data } = await getDonorAnalytics();
+            const [analyticsRes, donationsRes] = await Promise.all([
+                getDonorAnalytics(),
+                getMyDonations()
+            ]);
+            
             setStats({
-                totalDonations: data.summary.totalDonations,
-                completedDonations: data.summary.completed,
-                activeDonations: data.summary.active,
-                peopleHelped: data.summary.peopleHelped
+                totalDonations: analyticsRes.data.summary.totalDonations,
+                completedDonations: analyticsRes.data.summary.completed,
+                activeDonations: analyticsRes.data.summary.active,
+                peopleHelped: analyticsRes.data.summary.peopleHelped
             });
+
+            // Count pending requests
+            const pending = donationsRes.data.reduce((acc, d) => {
+                const count = (d.subRequests || []).filter(r => r.status === 'pending_approval').length;
+                return acc + count;
+            }, 0);
+            setPendingCount(pending);
+            
             setLoading(false);
         } catch (error) {
-            console.error('Failed to fetch donor stats:', error);
+            console.error('Failed to fetch donor data:', error);
             setLoading(false);
         }
     };
@@ -44,6 +58,27 @@ const DonorOverview = () => {
 
     return (
         <div className="space-y-8 animate-fade-in-up">
+            {/* PENDING APPROVALS ALERT */}
+            {pendingCount > 0 && (
+                <Link 
+                    to="/dashboard/donations" 
+                    className="flex items-center justify-between bg-orange-50 border border-orange-100 p-4 rounded-2xl hover:bg-orange-100 transition-all group"
+                >
+                    <div className="flex items-center space-x-4">
+                        <div className="h-10 w-10 bg-orange-500 text-white rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-orange-200">
+                            <FaUsers />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-orange-900">You have {pendingCount} pending {pendingCount === 1 ? 'request' : 'requests'}</h4>
+                            <p className="text-sm text-orange-700">Recipients are waiting for your approval to pick up food.</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center text-orange-600 font-bold text-sm">
+                        Go to Approvals <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                </Link>
+            )}
+
             {/* Value Proposition / Welcome Banner */}
             <div className="bg-gradient-to-r from-emerald-600 to-teal-500 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden transition-all duration-500">
                 <div className="relative z-10 max-w-2xl">

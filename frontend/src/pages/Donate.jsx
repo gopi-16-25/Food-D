@@ -344,7 +344,12 @@ const Donate = ({ onSuccess }) => {
                                     <input
                                         type="number"
                                         min="1"
-                                        step="0.1"
+                                        step="1"
+                                        onKeyDown={(e) => {
+                                            if (['.', 'e', 'E', '+', '-'].includes(e.key)) {
+                                                e.preventDefault();
+                                            }
+                                        }}
                                         value={quantity}
                                         onChange={(e) => setQuantity(e.target.value)}
                                         className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white transition-all outline-none"

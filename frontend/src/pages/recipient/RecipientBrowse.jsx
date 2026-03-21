@@ -168,6 +168,10 @@ const RecipientBrowse = () => {
             toast.error("Please provide a delivery location.");
             return;
         }
+        if (!requestedQuantity || parseFloat(requestedQuantity) <= 0 || parseFloat(requestedQuantity) > maxAvailable) {
+            toast.error(`Please enter a valid quantity between 1 and ${Math.floor(maxAvailable)}.`);
+            return;
+        }
         const toastId = toast.loading("Processing request...");
         setIsRequesting(true);
         try {
@@ -187,6 +191,7 @@ const RecipientBrowse = () => {
     };
 
     const filteredDonations = donations.filter(d => {
+        if (d.quantity <= 0) return false;
         if (filter === 'urgent') {
             const hoursLeft = (new Date(d.expiryDate) - new Date()) / 36e5;
             return hoursLeft < 24 && hoursLeft > 0;
@@ -318,9 +323,12 @@ const RecipientBrowse = () => {
                                 <label className="text-sm font-semibold text-gray-700">Quantity Needed (Max: {maxAvailable})</label>
                                 <input
                                     type="number"
-                                    min="0.1"
-                                    max={maxAvailable}
-                                    step="0.1"
+                                    min="1"
+                                    max={Math.floor(maxAvailable)}
+                                    step="1"
+                                    onKeyDown={(e) => {
+                                        if (['.', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                                    }}
                                     value={requestedQuantity}
                                     onChange={(e) => setRequestedQuantity(e.target.value)}
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-emerald-600"
