@@ -204,18 +204,10 @@ exports.requestDonation = async (req, res) => {
 
     try {
         const donation = await Donation.findById(req.params.id);
+        // Removed: Restriction on one request per recipient per donation
+        // This allows recipients to request remaining portions of a donation
+
         if (!donation) return res.status(404).json({ message: 'Donation not found' });
-
-        // Check if recipient already has a pending or approved request for this donation
-        const existingRequest = await Donation.findOne({
-            parentDonation: donation._id,
-            recipient: req.user._id,
-            status: { $in: ['pending_approval', 'requested', 'assigned', 'picked'] }
-        });
-
-        if (existingRequest) {
-            return res.status(400).json({ message: 'You have already requested a portion of this donation' });
-        }
 
         if (donation.status !== 'posted') {
             return res.status(400).json({ message: 'Donation is not available' });

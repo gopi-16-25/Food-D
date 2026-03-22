@@ -338,18 +338,60 @@ const DonorDonations = () => {
                                         </td>
                                         <td className="px-10 py-6">
                                             <div className="flex items-center space-x-3">
-                                                <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black border border-emerald-200 capitalize">
-                                                    {donation.recipient ? donation.recipient.name.charAt(0) : 'W'}
-                                                </div>
-                                                <span className="text-xs font-bold text-gray-700">{donation.recipient ? donation.recipient.name : 'Waiting...'}</span>
+                                                {donation.recipient ? (
+                                                    <>
+                                                        <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black border border-emerald-200 capitalize">
+                                                            {donation.recipient.name.charAt(0)}
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700">{donation.recipient.name}</span>
+                                                    </>
+                                                ) : donation.subRequests && donation.subRequests.length > 0 ? (
+                                                    <>
+                                                        <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black border border-emerald-200 capitalize">
+                                                            {donation.subRequests.length === 1 ? donation.subRequests[0].recipient?.name?.charAt(0) || 'R' : 'M'}
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700">
+                                                            {donation.subRequests.length === 1 ? donation.subRequests[0].recipient?.name || 'Requested' : `Multiple (${donation.subRequests.length})`}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black border border-emerald-200 capitalize">
+                                                            W
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700">Waiting...</span>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-10 py-6">
                                             <div className="flex items-center space-x-3">
-                                                <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black border border-indigo-200 capitalize">
-                                                    {donation.volunteer ? donation.volunteer.name.charAt(0) : 'S'}
-                                                </div>
-                                                <span className="text-xs font-bold text-gray-700">{donation.volunteer ? donation.volunteer.name : 'Searching...'}</span>
+                                                {donation.volunteer ? (
+                                                    <>
+                                                        <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black border border-indigo-200 capitalize">
+                                                            {donation.volunteer.name.charAt(0)}
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700">{donation.volunteer.name}</span>
+                                                    </>
+                                                ) : donation.subRequests && donation.subRequests.some(r => r.volunteer) ? (
+                                                    <>
+                                                        <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black border border-indigo-200 capitalize">
+                                                            V
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700">
+                                                            {donation.subRequests.filter(r => r.volunteer).length === 1 
+                                                                ? donation.subRequests.find(r => r.volunteer).volunteer.name 
+                                                                : "Multiple Heroes"}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-black border border-indigo-200 capitalize">
+                                                            S
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700">Searching...</span>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-10 py-6">
