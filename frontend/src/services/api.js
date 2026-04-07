@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
-    // baseURL: 'https://food-d-server.onrender.com/api',
+    // baseURL: 'http://localhost:5000/api',
+    baseURL: 'https://food-d-server.onrender.com/api',
 });
 
 // Add a request interceptor

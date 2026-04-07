@@ -1,8 +1,8 @@
 import { io } from 'socket.io-client';
 
 // Connect to backend URL (ensure port matches your backend)
-const SOCKET_URL = 'http://localhost:5000';
-// const SOCKET_URL = 'https://food-d-server.onrender.com';
+// const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = 'https://food-d-server.onrender.com';
 
 export const socket = io(SOCKET_URL, {
     transports: ['websocket'],
