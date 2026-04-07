@@ -295,9 +295,9 @@ exports.handleRequestAction = async (req, res) => {
             await subDonation.save();
 
             // Notify everyone about global changes
-            getIO().emit('donationUpdated', { 
-                donationId: subDonation._id, 
-                status: 'requested', 
+            getIO().emit('donationUpdated', {
+                donationId: subDonation._id,
+                status: 'requested',
                 type: 'approval',
                 parentId: parent._id,
                 parentQuantity: parent.quantity,
@@ -449,9 +449,9 @@ exports.generateOtp = async (req, res) => {
             await donation.save();
 
             // Send to Donor
-            if (donation.donor && donation.donor.email) {
-                await sendOtpEmail(donation.donor.email, otpCode, 'pickup');
-            }
+            // if (donation.donor && donation.donor.email) {
+            //     await sendOtpEmail(donation.donor.email, otpCode, 'pickup');
+            // }
 
             // Emit Socket for Donor Dashboard
             getIO().to(donation.donor._id.toString()).emit('pickupOtpGenerated', {
@@ -475,9 +475,9 @@ exports.generateOtp = async (req, res) => {
             await donation.save();
 
             // Send to Recipient
-            if (donation.recipient && donation.recipient.email) {
-                await sendOtpEmail(donation.recipient.email, otpCode, 'delivery');
-            }
+            // if (donation.recipient && donation.recipient.email) {
+            //     await sendOtpEmail(donation.recipient.email, otpCode, 'delivery');
+            // }
 
             // Emit Socket for Recipient Dashboard
             getIO().to(donation.recipient._id.toString()).emit('deliveryOtpGenerated', {
@@ -770,7 +770,7 @@ exports.searchGeocode = async (req, res) => {
 exports.clearInactive = async (req, res) => {
     try {
         const statusesToClear = ['completed', 'expired', 'rejected'];
-        let query = { 
+        let query = {
             $or: [
                 { status: { $in: statusesToClear } },
                 { status: 'posted', quantity: 0 }

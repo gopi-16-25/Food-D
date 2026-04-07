@@ -1,10 +1,19 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+// import { useEffect } from 'react';
 import { FaTachometerAlt, FaBoxOpen, FaTruck, FaChartLine, FaUser, FaSignOutAlt, FaLeaf } from 'react-icons/fa';
 
 const VolunteerSidebar = () => {
     const { logout } = useAuth();
     const navigate = useNavigate();
+
+    // useEffect(() => {
+    //     localStorage.removeItem('token');
+    //     localStorage.removeItem('user');
+    //     setUser(null);
+    //     toast.success('Logged out');
+    //     console.log("fuccccccck");
+    // }, []);
 
     const handleLogout = () => {
         logout();

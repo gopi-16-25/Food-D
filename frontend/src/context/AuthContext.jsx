@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import { verifyOtp as verifyOtpApi, googleLogin as googleLoginApi, updateRole as updateRoleApi } from '../services/api';
+import { googleLogin as googleLoginApi, updateRole as updateRoleApi } from '../services/api';
+// import { verifyOtp as verifyOtpApi, googleLogin as googleLoginApi, updateRole as updateRozleApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { socket } from '../services/socket';
 
@@ -38,13 +39,24 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const googleAuth = async (token) => {
+        setLoading(true);
         try {
             const { data } = await googleLoginApi(token);
-            toast.success('OTP sent to your email!');
-            return data.email; // Return email to be used in Login component
+
+            // ✅ Store token + user
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data));
+
+            setUser(data);
+
+            toast.success('Login successful!');
+            return data; // ✅ RETURN FULL USER OBJECT
+
         } catch (error) {
             toast.error(error.response?.data?.message || 'Google Login failed');
             return null;
+        } finally {
+            setLoading(false);
         }
     };
 

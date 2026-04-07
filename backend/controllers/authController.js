@@ -36,54 +36,49 @@ exports.googleLogin = async (req, res) => {
 
         let user = await User.findOne({ email });
 
-        // Check if this is the admin email
+        // Check admin
         const isAdmin = email === process.env.ADMIN_EMAIL;
 
+        // Create user if not exists
         if (!user) {
             user = await User.create({
                 name,
                 email,
-                role: isAdmin ? 'admin' : 'donor', // Default to donor if not admin
-                isProfileComplete: isAdmin, // Admin skips role selection
-                isVerified: false,
+                avatar: picture,
+                role: isAdmin ? 'admin' : 'donor',
+                isProfileComplete: isAdmin,
+                isVerified: true, // ✅ directly verified
             });
         }
 
-        // If existing user is admin email but doesn't have admin role, upgrade them
+        // Ensure admin role consistency
         if (isAdmin && user.role !== 'admin') {
             user.role = 'admin';
             user.isProfileComplete = true;
-            await user.save();
+            user.isVerified = true;
         }
 
-        // Generate OTP
-        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-        user.otp = {
-            code: otpCode,
-            expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
-        };
+        // Update last login
+        user.lastLogin = new Date();
         await user.save();
 
-        // Send OTP via Email
-        try {
-            await transporter.sendMail({
-                from: '"Food Donation App" <no-reply@fooddonation.com>',
-                to: email,
-                subject: 'Your Login OTP',
-                html: `<h2>Your OTP is ${otpCode}</h2><p>Valid for 5 minutes</p>`,
-            });
-        } catch (emailError) {
-            console.error('Failed to send email:', emailError.message);
-            // CONSOLE LOG OTP FOR DEBUGGING IF EMAIL FAILS
-            console.log('------------------------------------------------');
-            console.log(`LOGIN OTP for ${email}: ${otpCode}`);
-            console.log('------------------------------------------------');
-        }
+        // ✅ Direct login response (NO OTP)
+        res.status(200).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            role: user.role,
+            isProfileComplete: user.isProfileComplete,
+            token: generateToken(user._id),
+        });
 
-        res.status(200).json({ message: 'OTP sent to email', email });
     } catch (error) {
         console.error('Google Login Error:', error);
-        res.status(500).json({ message: 'Google authentication failed', error: error.message, stack: error.stack });
+        res.status(500).json({
+            message: 'Google authentication failed',
+            error: error.message,
+        });
     }
 };
 
