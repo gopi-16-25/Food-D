@@ -733,24 +733,31 @@ exports.reverseGeocode = async (req, res) => {
     const { lat, lon } = req.query;
 
     try {
+        console.log("🌐 Google Reverse Geocode:", lat, lon);
+
         const { data } = await axios.get(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+            `https://maps.googleapis.com/maps/api/geocode/json`,
             {
-                headers: {
-                    'User-Agent': 'FoodDonationApp/1.0 (your@email.com)'
-                },
-                timeout: 5000
+                params: {
+                    latlng: `${lat},${lon}`,
+                    key: process.env.GOOGLE_MAPS_API_KEY
+                }
             }
         );
 
-        res.json(data);
+        console.log("📦 Google response:", data);
+
+        const address = data.results[0]?.formatted_address;
+
+        res.json({
+            display_name: address || `Lat: ${lat}, Lng: ${lon}`
+        });
 
     } catch (error) {
-        console.error("Geocode failed:", error.message);
+        console.error("❌ Google geocode error:", error.message);
 
-        // ✅ NEVER send 502
         res.json({
-            display_name: "Location selected"
+            display_name: `Lat: ${lat}, Lng: ${lon}`
         });
     }
 };

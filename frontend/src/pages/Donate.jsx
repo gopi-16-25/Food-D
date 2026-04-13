@@ -57,9 +57,12 @@ const Donate = ({ onSuccess }) => {
                 const { data } = await reverseGeocode(lat, lng);
                 if (data && data.display_name) {
                     console.log("✅ Address from API:", data.display_name);
+                    console.log("📦 FULL API RESPONSE:", data);
+
                     setAddress(data.display_name);
                 } else {
                     console.log("⚠️ No display_name, using fallback");
+                    console.log("📦 FULL API RESPONSE:", data);
                     setAddress("Location selected");
                 }
             } catch (err) {
