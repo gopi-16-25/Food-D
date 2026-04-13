@@ -731,18 +731,27 @@ exports.getDonorAnalytics = async (req, res) => {
 // @desc    Reverse Geocode Proxy
 exports.reverseGeocode = async (req, res) => {
     const { lat, lon } = req.query;
-    if (!lat || !lon) return res.status(400).json({ message: 'Missing lat/lon' });
 
     try {
-        const { data } = await axios.get(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, {
-            headers: {
-                'User-Agent': 'FoodDonationApp/1.0 (razeerockstar@gmail.com)' // Identify app to respect usage policy
+        const { data } = await axios.get(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+            {
+                headers: {
+                    'User-Agent': 'FoodDonationApp/1.0 (your@email.com)'
+                },
+                timeout: 5000
             }
-        });
+        );
+
         res.json(data);
+
     } catch (error) {
-        console.error('Reverse Geocode Proxy Error:', error.message);
-        res.status(502).json({ message: 'Geocoding service unavailable' });
+        console.error("Geocode failed:", error.message);
+
+        // ✅ NEVER send 502
+        res.json({
+            display_name: "Location selected"
+        });
     }
 };
 
