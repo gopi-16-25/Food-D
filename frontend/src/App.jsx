@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import RoleSelection from './pages/RoleSelection';
+import Landing from './LandingPage';
 import RootRedirect from './components/RootRedirect';
 import RecipientLayout from './components/recipient/RecipientLayout';
 import { RecipientOverview, RecipientBrowse, RecipientRequests, RecipientAnalytics, RecipientProfile } from './pages/recipient/RecipientPages';
@@ -98,7 +99,7 @@ function App() {
               path="/history"
               element={<Navigate to="/dashboard/donations" replace />}
             />
-            <Route path="/" element={<RootRedirect />} />
+            <Route path="/" element={<Landing />} />
           </Routes>
           <Toaster position="top-center" />
         </div>

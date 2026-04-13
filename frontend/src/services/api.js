@@ -58,6 +58,7 @@ export const updateAdminProfile = (data) => api.put('/admin/profile', data);
 export const uploadImage = (formData) => api.post('/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
 });
+export const updateUserRole = (role) => api.put('/auth/update-role', { role });
 
 // Geocoding Proxy APIs
 export const searchGeocode = (q) => api.get(`/donations/search-geocode?q=${encodeURIComponent(q)}`);

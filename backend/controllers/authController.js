@@ -127,36 +127,72 @@ exports.verifyOtp = async (req, res) => {
 // Update User Role
 exports.updateRole = async (req, res) => {
     const { role } = req.body;
-    const userId = req.user.id; // Assuming auth middleware adds user to req
+    const userId = req.user.id;
 
     try {
+        console.log("🔁 Role change request:", role);
+
+        const validRoles = ['donor', 'recipient', 'volunteer'];
+
+        if (!validRoles.includes(role)) {
+            return res.status(400).json({ message: 'Invalid role' });
+        }
+
         const user = await User.findById(userId);
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // ❌ Admin cannot change
         if (user.email === process.env.ADMIN_EMAIL) {
             return res.status(403).json({ message: 'Admin role cannot be changed.' });
         }
 
-        if (user.isProfileComplete) {
-            return res.status(403).json({ message: 'Profile already completed. Contact admin to change role.' });
+        console.log("👤 Current role:", user.role);
+
+        // ✅ Optional: prevent same role update
+        if (user.role === role) {
+            return res.json(user);
         }
 
+        // 🔥 OPTIONAL SAFETY CHECK (IMPORTANT)
+        const activeDonations = await Donation.find({
+            $or: [
+                { donor: user._id },
+                { volunteer: user._id },
+                { recipient: user._id }
+            ],
+            status: { $in: ['assigned', 'picked'] }
+        });
+
+        if (activeDonations.length > 0) {
+            return res.status(400).json({
+                message: 'Cannot change role while you have active tasks'
+            });
+        }
+
+        // ✅ Allow role change
         user.role = role;
         user.isProfileComplete = true;
+
         await user.save();
+
+        console.log("✅ Role updated to:", role);
 
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
+            avatar: user.avatar,
+            phone: user.phone,
             isProfileComplete: user.isProfileComplete,
-            token: generateToken(user._id),
+            token: generateToken(user._id)
         });
+
     } catch (error) {
+        console.error("🔥 Role update error:", error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -179,50 +215,88 @@ exports.getProfile = async (req, res) => {
 // @route   PUT /api/auth/profile
 // @access  Private
 exports.updateProfile = async (req, res) => {
+    console.log("📥 [updateProfile] Request received");
+    console.log("👤 User ID from token:", req.user?.id);
+    console.log("📦 Request body:", req.body);
+
     try {
         const user = await User.findById(req.user.id);
+
+        console.log("🔍 User fetched from DB:", user ? user._id : "NOT FOUND");
+
         if (!user) {
+            console.log("❌ User not found in DB");
             return res.status(404).json({ message: 'User not found' });
         }
 
         const { name, phone, socialLinks, avatar } = req.body;
 
+        console.log("🛠️ Updating fields:", {
+            name,
+            phone,
+            socialLinks,
+            avatar
+        });
+
+        // Apply updates
         if (name) user.name = name;
+
         if (phone !== undefined) {
             user.phone = phone === '' ? undefined : phone;
         }
+
         if (avatar !== undefined) user.avatar = avatar;
+
         if (socialLinks) {
             user.socialLinks = { ...user.socialLinks, ...socialLinks };
         }
 
+        console.log("💾 Saving user...");
         const updatedUser = await user.save();
+
+        console.log("✅ User saved successfully:", updatedUser._id);
 
         // REAL-TIME UPDATE
         try {
+            console.log("📡 Fetching active donations for socket update...");
+
             const activeDonations = await Donation.find({
-                $or: [{ donor: user._id }, { volunteer: user._id }, { recipient: user._id }],
+                $or: [
+                    { donor: user._id },
+                    { volunteer: user._id },
+                    { recipient: user._id }
+                ],
                 status: { $in: ['posted', 'requested', 'assigned', 'picked'] }
             });
+
+            console.log("📊 Active donations count:", activeDonations.length);
 
             const io = socket.getIO();
 
             activeDonations.forEach(donation => {
-                io.emit('donationUpdated', { donationId: donation._id, status: donation.status });
+                console.log("📡 Emitting donationUpdated for:", donation._id);
+
+                io.emit('donationUpdated', {
+                    donationId: donation._id,
+                    status: donation.status
+                });
             });
 
-            // Emit general user update
+            console.log("📡 Emitting userUpdated event");
+
             io.emit('userUpdated', {
                 _id: updatedUser._id,
                 name: updatedUser.name,
                 avatar: updatedUser.avatar,
                 phone: updatedUser.phone
             });
+
         } catch (socketError) {
-            console.error('Socket Notification Failed (Non-fatal):', socketError.message);
+            console.error("⚠️ Socket error (non-fatal):", socketError.message);
         }
 
-        // Return full user object expected by frontend
+        console.log("📤 Sending response to frontend");
+
         res.json({
             _id: updatedUser._id,
             name: updatedUser.name,
@@ -233,10 +307,11 @@ exports.updateProfile = async (req, res) => {
             isProfileComplete: updatedUser.isProfileComplete,
             socialLinks: updatedUser.socialLinks
         });
+
     } catch (error) {
+        console.error("🔥 [updateProfile ERROR]:", error);
         res.status(500).json({ message: error.message });
     }
-
 };
 
 // Resend OTP

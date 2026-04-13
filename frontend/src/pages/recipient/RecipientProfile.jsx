@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { getUserProfile, updateUserProfile, uploadImage } from '../../services/api';
+import { getUserProfile, updateUserProfile, uploadImage, updateUserRole } from '../../services/api';
 import toast from 'react-hot-toast';
 import { FaUser, FaPhone, FaSave, FaCamera } from 'react-icons/fa';
 
@@ -21,6 +21,21 @@ const RecipientProfile = () => {
     useEffect(() => {
         fetchProfile();
     }, []);
+
+    const handleRoleChange = async (newRole) => {
+        try {
+            const { data } = await updateUserRole(newRole);
+
+            setFormData(prev => ({ ...prev, role: data.role }));
+
+            updateUser(data);
+
+            toast.success("Role updated successfully!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to update role");
+        }
+    };
 
     const fetchProfile = async () => {
         try {
@@ -121,9 +136,17 @@ const RecipientProfile = () => {
                     <h1 className="text-2xl font-bold text-gray-800">{formData.name}</h1>
                     <p className="text-gray-500">{formData.email}</p>
                     <div className="flex items-center justify-center md:justify-start mt-3">
-                        <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold uppercase tracking-wide">
-                            {formData.role}
-                        </span>
+                        <div className="mt-3">
+                            <select
+                                value={formData.role}
+                                onChange={(e) => handleRoleChange(e.target.value)}
+                                className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold uppercase tracking-wide cursor-pointer outline-none"
+                            >
+                                <option value="donor">Donor</option>
+                                <option value="recipient">Recipient</option>
+                                <option value="volunteer">Volunteer</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>

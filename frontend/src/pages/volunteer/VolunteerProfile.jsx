@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { updateAdminProfile, uploadImage, updateUserProfile } from '../../services/api';
+import { updateAdminProfile, uploadImage, updateUserProfile, updateUserRole } from '../../services/api';
 import toast from 'react-hot-toast';
 import { FaUser, FaPhone, FaCamera, FaEnvelope, FaSave } from 'react-icons/fa';
 
@@ -18,7 +18,25 @@ const VolunteerProfile = () => {
 
     // We can reuse the same image logic.
     // Assuming backend serves uploads from baseURL.
-    const baseURL = 'http://localhost:5000';
+    const baseURL = 'https://food-d-server.onrender.com';
+    // const baseURL = 'http://localhost:5000';
+
+
+    const handleRoleChange = async (newRole) => {
+        try {
+            const { data } = await updateUserRole(newRole);
+
+            setFormData(prev => ({ ...prev, role: data.role }));
+
+            updateUser(data);
+
+            toast.success("Role updated successfully!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to update role");
+        }
+    };
+
 
     useEffect(() => {
         if (user) {
@@ -91,9 +109,18 @@ const VolunteerProfile = () => {
                             </label>
                         </div>
                         <h2 className="text-xl font-bold text-gray-800">{user.name}</h2>
-                        <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold uppercase tracking-wider mt-2 inline-block">
-                            Volunteer
-                        </span>
+
+                        <div className="mt-3">
+                            <select
+                                value={formData.role}
+                                onChange={(e) => handleRoleChange(e.target.value)}
+                                className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold uppercase tracking-wide cursor-pointer outline-none"
+                            >
+                                <option value="volunteer">Volunteer</option>
+                                <option value="donor">Donor</option>
+                                <option value="recipient">Recipient</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
