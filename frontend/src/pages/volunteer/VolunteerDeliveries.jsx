@@ -117,7 +117,18 @@ const VolunteerDeliveries = () => {
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Next Deadline</p>
                                     <p className="text-xl font-mono font-bold text-red-500">
                                         {(isAssigned ? delivery.volunteerCommitment?.pickupDeadline : delivery.volunteerCommitment?.deliveryDeadline)
-                                            ? new Date(isAssigned ? delivery.volunteerCommitment.pickupDeadline : delivery.volunteerCommitment.deliveryDeadline).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                            ? new Date(
+                                                isAssigned
+                                                    ? delivery.volunteerCommitment.pickupDeadline
+                                                    : delivery.volunteerCommitment.deliveryDeadline
+                                            ).toLocaleString('en-IN', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                hour12: true,
+                                                timeZone: 'UTC'
+                                            })
                                             : <span className="text-sm text-gray-400">No Checkpoint</span>}
                                     </p>
                                 </div>

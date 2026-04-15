@@ -83,7 +83,7 @@ const AdminOrders = () => {
     };
 
     const latestOrder = filteredDonations[0];
-
+    console.log(filteredDonations);
     if (loading) return <div className="p-8 text-center text-gray-500">Loading orders...</div>;
 
     return (
@@ -245,6 +245,18 @@ const AdminOrders = () => {
                                                     {/* MISSION SUMMARY */}
                                                     <div className="lg:w-1/3 space-y-6">
                                                         <h5 className="text-[10px] font-black text-blue-500 uppercase tracking-[3px] mb-4">Mission Intelligence</h5>
+
+                                                        <div className="flex items-start space-x-4">
+                                                            <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-lg mt-1">
+                                                                <FaMapMarkerAlt />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-black text-gray-800">Pickup Location</p>
+                                                                <p className="text-[10px] font-bold text-gray-400 leading-relaxed italic">
+                                                                    {donation.location?.address || donation.donor?.location?.address || 'Not Available'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
                                                         <div className="space-y-4">
                                                             <div className="flex items-center space-x-4">
                                                                 <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-lg"><FaBoxOpen /></div>

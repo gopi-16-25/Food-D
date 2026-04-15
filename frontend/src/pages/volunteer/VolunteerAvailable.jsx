@@ -166,7 +166,13 @@ const VolunteerAvailable = () => {
                                 </div>
                                 <div className="flex items-center text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
                                     <FaClock className="mr-2" />
-                                    <span>Expires: {new Date(order.expiryDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span>
+                                        Expires: {new Date(order.expiryDate).toLocaleTimeString('en-IN', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            timeZone: 'UTC'
+                                        })}
+                                    </span>
                                 </div>
                                 {order.location && order.recipientLocation && order.recipientLocation.coordinates && (
                                     <div className="flex items-center text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
